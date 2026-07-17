@@ -54,9 +54,28 @@ def llm_response(event, temp, duration, zone, evidence):
 
 # ---------- Theme ----------
 st.markdown('''<style>
-[data-testid="stAppViewContainer"]{background:linear-gradient(135deg,#07101d,#0b1a2c 60%,#10243b)}
-[data-testid="stSidebar"]{background:#091524}.block-container{padding-top:2rem}
-.kpi{background:#102238;border:1px solid #29445e;border-radius:14px;padding:16px}.kpi small{color:#9bb0c8}.kpi b{font-size:28px;display:block;margin:5px 0}.muted{color:#9bb0c8}.risk{font-size:34px;font-weight:800}.notice{padding:12px;border-radius:10px;background:#453615;border:1px solid #85651e;color:#ffe092}
+/* CiviSentry 360 accessible projector-first theme */
+:root{--navy:#0b1f35;--blue:#1464a5;--cyan:#007f86;--ink:#10253d;--muted:#526b83;--line:#d7e3ee;--surface:#ffffff;--soft:#f3f7fb;--red:#b42332;--amber:#9a6500;--green:#087443}
+[data-testid="stAppViewContainer"]{background:#f4f7fb;color:var(--ink)}
+[data-testid="stHeader"]{background:rgba(244,247,251,.92)}
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#0b1f35,#123b5d);border-right:1px solid #1c5277}
+[data-testid="stSidebar"] *{color:#f5fbff!important}
+[data-testid="stSidebar"] .stCaption{color:#c4d7e5!important}
+.block-container{max-width:1450px;padding-top:2.2rem;padding-bottom:3rem}
+h1,h2,h3{color:var(--navy)!important;letter-spacing:-.02em}
+.stMarkdown p,.stMarkdown li,.stCaption{color:var(--ink)}
+[data-testid="stMetric"]{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 17px;box-shadow:0 4px 14px rgba(16,37,61,.06)}
+[data-testid="stMetricLabel"]{color:var(--muted)!important;font-weight:650}
+[data-testid="stMetricValue"]{color:var(--navy)!important;font-weight:800}
+[data-testid="stMetricDelta"]{font-weight:700}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 4px 14px rgba(16,37,61,.06)}
+.kpi small{color:var(--muted)}.kpi b{font-size:28px;color:var(--navy);display:block;margin:5px 0}.muted{color:var(--muted)}
+.stButton>button{border-radius:9px;border:1px solid #9bb9cf;background:#fff;color:var(--navy);font-weight:700;min-height:2.5rem}
+.stButton>button:hover{border-color:var(--blue);color:var(--blue);background:#eef7ff}
+[data-testid="stAlert"]{border-radius:10px}
+[data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:10px}
+div[data-baseweb="tab-list"]{gap:8px}button[data-baseweb="tab"]{font-weight:700}
+.notice{padding:12px;border-radius:10px;background:#fff5d6;border:1px solid #e5bd55;color:#6d4b00}
 </style>''', unsafe_allow_html=True)
 
 # ---------- Sidebar ----------
