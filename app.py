@@ -51,8 +51,6 @@ def llm_response(event, temp, duration, zone, evidence):
     if not key:
         return None, 'offline', 'No GEMINI_API_KEY configured'
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=key.strip())
         prompt = f'''You are CiviSentry 360, a construction safety copilot for Tamil Nadu.
 Event: {event}
 Temperature: {temp} C
@@ -60,18 +58,19 @@ Work duration: {duration} minutes
 Zone: {zone}
 Retrieved safety evidence: {evidence}
 Return exactly three short sections: Supervisor action in English; Worker instruction in Tamil; Evidence used. Do not diagnose illness, invent laws, or claim field validation.'''
-        # Try the current model first, then a compatible fallback.
+        # Current Google GenAI SDK. Try currently supported model names in order.
+        from google import genai
+        client = genai.Client(api_key=key.strip())
         last_error = None
-        for model_name in ('gemini-2.0-flash', 'gemini-1.5-flash'):
+        for model_name in ('gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-1.5-flash'):
             try:
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(model=model_name, contents=prompt)
                 text = getattr(response, 'text', None)
                 if text and text.strip():
                     return text.strip(), 'live', model_name
             except Exception as exc:
                 last_error = exc
-        return None, 'error', f'Gemini request failed: {type(last_error).__name__ if last_error else "empty response"}'
+        return None, 'error', f'Gemini model unavailable: {type(last_error).__name__ if last_error else "empty response"}'
     except Exception as exc:
         return None, 'error', f'LLM setup failed: {type(exc).__name__}'
 
