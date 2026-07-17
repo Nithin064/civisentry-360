@@ -40,17 +40,40 @@ def local_response(event, temp, duration, zone):
     return en, ta, title, evidence
 
 def llm_response(event, temp, duration, zone, evidence):
-    """Optional Gemini integration. Falls back to a grounded response if no key is configured."""
-    key = os.getenv('GEMINI_API_KEY') or st.secrets.get('GEMINI_API_KEY', None)
-    if not key: return None
+    """Optional Gemini integration. Returns (text, status, detail).
+    Emergency classification remains local; LLM is only for explanation."""
+    try:
+        key = os.getenv('GEMINI_API_KEY')
+        if not key:
+            key = st.secrets.get('GEMINI_API_KEY', None)
+    except Exception:
+        key = None
+    if not key:
+        return None, 'offline', 'No GEMINI_API_KEY configured'
     try:
         import google.generativeai as genai
-        genai.configure(api_key=key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        prompt = f'''You are CiviSentry 360, a construction safety copilot for Tamil Nadu.\nEvent: {event}\nTemperature: {temp} C\nWork duration: {duration} minutes\nZone: {zone}\nRetrieved safety evidence: {evidence}\nReturn concise English supervisor action, a short Tamil worker instruction, and one sentence explaining the evidence. Do not diagnose illness, invent laws, or claim field validation.'''
-        return model.generate_content(prompt).text
-    except Exception as e:
-        return f'Live LLM unavailable; grounded offline fallback used. ({type(e).__name__})'
+        genai.configure(api_key=key.strip())
+        prompt = f'''You are CiviSentry 360, a construction safety copilot for Tamil Nadu.
+Event: {event}
+Temperature: {temp} C
+Work duration: {duration} minutes
+Zone: {zone}
+Retrieved safety evidence: {evidence}
+Return exactly three short sections: Supervisor action in English; Worker instruction in Tamil; Evidence used. Do not diagnose illness, invent laws, or claim field validation.'''
+        # Try the current model first, then a compatible fallback.
+        last_error = None
+        for model_name in ('gemini-2.0-flash', 'gemini-1.5-flash'):
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                text = getattr(response, 'text', None)
+                if text and text.strip():
+                    return text.strip(), 'live', model_name
+            except Exception as exc:
+                last_error = exc
+        return None, 'error', f'Gemini request failed: {type(last_error).__name__ if last_error else "empty response"}'
+    except Exception as exc:
+        return None, 'error', f'LLM setup failed: {type(exc).__name__}'
 
 # ---------- Theme ----------
 st.markdown('''<style>
@@ -163,16 +186,19 @@ elif page == 'AI Copilot':
     en,ta,title,evidence = local_response(event_label,temp,duration,zone)
     st.markdown(f'**Retrieved source:** `{title}`')
     st.info(evidence)
-    live = llm_response(event_label,temp,duration,zone,evidence)
-    if live:
-        st.success('Live LLM response generated using GEMINI_API_KEY')
+    live, status, detail = llm_response(event_label,temp,duration,zone,evidence)
+    if status == 'live':
+        st.success(f'Live LLM response generated • {detail}')
         st.write(live)
     else:
+        if status == 'error':
+            st.warning(f'Live LLM unavailable ({detail}). Safe grounded fallback is active.')
+        else:
+            st.info('Offline grounded mode is active. Add GEMINI_API_KEY in Streamlit Secrets for live LLM generation.')
         st.markdown('### Grounded fallback recommendation')
         st.write(en)
         st.markdown('### Tamil worker instruction')
         st.markdown(f'### {ta}')
-        st.caption('To enable live LLM generation, add GEMINI_API_KEY in deployment secrets. The fallback is intentionally retained for offline reliability.')
 
 # ---------- Simulator ----------
 elif page == 'Simulator':
